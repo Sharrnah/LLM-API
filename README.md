@@ -19,7 +19,7 @@ docker run -p 8001:8000 --restart=always --runtime=nvidia --gpus=all --env AUTH_
 
 Call the API endpoint like this:
 ```sh
-curl --request POST --url 'http://89.39.149.200:8001/chat?text_prompt=t=Hello%20how%20are%20you?' --header 'X-Auth-Token: ##SOME_TOKEN##'
+curl --request POST --url 'http://127.0.0.1:8001/chat?text_prompt=t=Hello%20how%20are%20you?' --header 'X-Auth-Token: ##SOME_TOKEN##'
 ```
 
 # Todos
