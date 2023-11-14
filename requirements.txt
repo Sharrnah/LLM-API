@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+tensorflow[and-cuda]
+ctransformers[cuda]
+llama-cpp-python==0.2.13
+
+# summary
+torch
+accelerate
+transformers
+nltk
