@@ -1,7 +1,7 @@
 # ============================================================
 # Adds Large Language Model support over API to Whispering Tiger
 # answers to questions using speech to text
-# V1.0.0
+# V1.0.1
 #
 # See https://github.com/Sharrnah/whispering
 # ============================================================
@@ -39,15 +39,29 @@ class LlmApiPlugin(Plugins.Base):
                 "osc_enabled": True,
                 "osc_notify": True,
                 "osc_delay": {"type": "slider", "min": 1, "max": 60, "step": 1, "value": 10},
+                "tts_answer": False,
                 "auth_token": "",
+                "instruction_name": "_",
                 "api_url": "",
                 "only_respond_question_commands": False,
                 "translate_to_speaker_language": False,
             },
             settings_groups={
-                "General": ["osc_prefix", "osc_enabled", "osc_notify", "api_url", "auth_token", "only_respond_question_commands", "translate_to_speaker_language", "osc_delay"],
+                "General": ["osc_prefix", "osc_enabled", "osc_notify", "tts_answer", "api_url", "auth_token", "only_respond_question_commands", "translate_to_speaker_language", "osc_delay", "instruction_name"],
             }
         )
+
+        if self.is_enabled(False):
+            # disable OSC processing so the LLM can take it over:
+            settings.SetOption("osc_auto_processing_enabled", False)
+            # disable TTS so the LLM can take it over:
+            settings.SetOption("tts_answer", False)
+            # disable websocket final messages processing so the LLM can take it over:
+            settings.SetOption("websocket_final_messages", False)
+        else:
+            settings.SetOption("osc_auto_processing_enabled", True)
+            settings.SetOption("tts_answer", True)
+            settings.SetOption("websocket_final_messages", True)
 
     def _generate_chat_response(self, text_prompt, name, instruction_name, api_url, auth_token=""):
         # Base URL - ensure this URL is correct
@@ -106,10 +120,11 @@ class LlmApiPlugin(Plugins.Base):
         if self.is_enabled(False):
             if not self.get_plugin_setting("only_respond_question_commands") or (self.get_plugin_setting("only_respond_question_commands") and (("?" in text.strip().lower() and any(ele in text.strip().lower() for ele in PROMPT_FORMATTING['question'])) or
                                                                                any(ele in text.strip().lower() for ele in PROMPT_FORMATTING['command']))):
+                instruction_name = self.get_plugin_setting("instruction_name")
                 predicted_text, _ = self._generate_chat_response(
                     text_prompt=text,
                     name="User",
-                    instruction_name="tiger",
+                    instruction_name=instruction_name,
                     api_url=self.get_plugin_setting("api_url"),
                     auth_token=self.get_plugin_setting("auth_token")
                 )
@@ -125,4 +140,24 @@ class LlmApiPlugin(Plugins.Base):
                 print("llm_answer: ", predicted_text)
 
                 self.send_message(text, predicted_text, result_obj)
+
+                if self.get_plugin_setting("tts_answer"):
+                    self.send_tts(predicted_text)
         return
+
+    def send_tts(self, text):
+        device_index = settings.GetOption("device_out_index")
+        if device_index is None or device_index == -1:
+            device_index = settings.GetOption("device_default_out_index")
+
+        for plugin_inst in Plugins.plugins:
+            if hasattr(plugin_inst, 'tts'):
+                plugin_inst.tts(text, device_index, None, False)
+
+    def on_enable(self):
+        self.init()
+        pass
+
+    def on_disable(self):
+        self.init()
+        pass
