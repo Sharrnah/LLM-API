@@ -51,6 +51,9 @@ class LlmApiPlugin(Plugins.Base):
             }
         )
 
+        orig_osc_auto_processing_enabled = settings.GetOption("osc_auto_processing_enabled")
+        orig_tts_answer = settings.GetOption("tts_answer")
+
         if self.is_enabled(False):
             # disable OSC processing so the LLM can take it over:
             settings.SetOption("osc_auto_processing_enabled", False)
@@ -59,8 +62,8 @@ class LlmApiPlugin(Plugins.Base):
             # disable websocket final messages processing so the LLM can take it over:
             settings.SetOption("websocket_final_messages", False)
         else:
-            settings.SetOption("osc_auto_processing_enabled", True)
-            settings.SetOption("tts_answer", True)
+            settings.SetOption("osc_auto_processing_enabled", orig_osc_auto_processing_enabled)
+            settings.SetOption("tts_answer", orig_tts_answer)
             settings.SetOption("websocket_final_messages", True)
 
     def _generate_chat_response(self, text_prompt, name, instruction_name, api_url, auth_token=""):
